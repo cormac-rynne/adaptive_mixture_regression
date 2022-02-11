@@ -23,13 +23,20 @@ Local Counting Map for Crowd Counting** by Xiyang Liu, Jie Yang and Wenrui Ding
 ## Contents
 * **amr_vgg16_lcm_reg.ipynb**
   * This looks at the model file VGG16_LCM_REG.py in depth, in particular exploring 
-the step by step processes involved in the Mixture Regression Module (MRM) 
+    the step by step processes involved in the Mixture Regression Module (MRM)
   * Exploration of some DL theory
     * Activation functions
     * 1x1 convolution
+* **tree_results_vgg16_lcm_reg.ipynb**
+  * Results of experiment when applying vgg16_lcm_reg model to london tree dataset
+  * **Note**: test_classes.Summary and test_classes.CvTest are custom tools I've built, I will make the code for these available on 
+    github in the coming weeks
 * test_config.py
   * config file copied from repo to be able to run the code in model file
 
 ## Todo
-* Indepth explortation of model file ResNet_LCM_v2.py 
+* Indepth explortation of model file ResNet_LCM_v2.py
+* Step by step dissection of model outputs
 * Application to and measured performance on [london-trees-dataset](https://github.com/cormac-rynne/london-trees-dataset)
+  for a range of off-the-shelf models (CSRNet, VGG16, ResNet etc) and comparison with the various 
+  LCM models in this paper
