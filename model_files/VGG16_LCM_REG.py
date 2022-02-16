@@ -25,6 +25,10 @@ elif data_mode == 'UCF50':
 elif data_mode == 'london':
     patch_max = cfg.LONDONPATCHMAX
 
+def log_output(var_name, var):
+    logger.info(f'{var_name}: {var.shape}')
+    np.save(f'./model_outputs/{var_name}.npy', var.cpu().numpy())
+
 class VGG16_LCM_REG(nn.Module):
     def __init__(self, load_weights=False, stage_num=[3,3,3], count_range=patch_max, lambda_i=1., lambda_k=1.):
         super(VGG16_LCM_REG, self).__init__()
@@ -131,67 +135,83 @@ class VGG16_LCM_REG(nn.Module):
     def forward(self, x):
         
         x3 = self.layer3(x)
-        logger.info(f'x3:{x3.shape}')
+        log_output('x3', x3)
+
         # np.save('./model_outputs/x3.npy', x3.cpu().numpy())
         x4 = self.layer4(x3)
-        logger.info(f'x4:{x4.shape}')
+        log_output('x4', x4)
+
         x5 = self.layer5(x4)
-        logger.info(f'x5:{x5.shape}')
+        log_output('x5', x5)
 
         if self.multi_fuse:
             x5 = self.fuse_layer5(x5)
-            logger.info(f'multifuse x5:{x5.shape}')
+            log_output('multifuse_x5', x5)
+
             x4 = self.fuse_layer4(x4)
-            logger.info(f'multifuse x4:{x4.shape}')
+            log_output('multifuse_x4', x4)
+
             x3 = self.fuse_layer3(x3)
-            logger.info(f'multifuse x3:{x3.shape}')
+            log_output('multifuse_x3', x3)
 
         x5_= self.count_layer5(x5)
-        logger.info(f'count_layer x5_:{x5_.shape}')
+        log_output('countlayer_x4_', x5_)
+
         p5 = self.layer5_p(x5_)
-        logger.info(f'p_layer x5:{p5.shape}')
+        log_output('p5', p5)
+
         if self.soft_interval:
             k5 = self.layer5_k(x5_)
-            logger.info(f'k_layer x5:{k5.shape}')
+            log_output('k5', k5)
+
             i5 = self.layer5_i(x5_)
-            logger.info(f'i_layer x5:{i5.shape}')
+            log_output('i5', i5)
 
         x4_ = self.count_layer4(x4)
+        log_output('countlayer_x4_', x4_)
+
         p4 = self.layer4_p(x4_)
+        log_output('p4', p4)
+
         if self.soft_interval:
             k4 = self.layer4_k(x4_)
+            log_output('k4', k4)
             i4 = self.layer4_i(x4_)
+            log_output('i4', i4)
 
         x3_ = self.count_layer3(x3)
+        log_output('countlayer_x3_', x3_)
         p3 = self.layer3_p(x3_)
+        log_output('p3', p3)
         if self.soft_interval:
             k3 = self.layer3_k(x3_)
+            log_output('k3', k3)
             i3 = self.layer3_i(x3_)
+            log_output('i3', i3)
 
         stage1_regress = p5[:, 0, :, :] * 0
-        logger.info(f'stage1_regress0: {stage1_regress.shape}')
-        np.save('./model_outputs/stage1_regress0.npy', stage1_regress.cpu().numpy())
-
+        log_output('stage1_regress0', stage1_regress)
         stage2_regress = p4[:, 0, :, :] * 0
+        log_output('stage2_regress0', stage1_regress)
         stage3_regress = p3[:, 0, :, :] * 0
+        log_output('stage3_regress0', stage1_regress)
+
 
         for index in range(self.stage_num[0]):
             if self.soft_interval:
                 stage1_regress = stage1_regress + (float(index) + self.lambda_i * i5[:, index, :, :]) * p5[:, index, :, :]
             else:
                 stage1_regress = stage1_regress + float(index) * p5[:, index, :, :]
-            logger.info(f'stage1_regress1_{index}: {stage1_regress.shape}')
-            np.save(f'./model_outputs/stage1_regress1_{index}.npy', stage1_regress.cpu().numpy())
+            log_output(f'stage1_regress1_{index}', stage1_regress)
+
         stage1_regress = torch.unsqueeze(stage1_regress, 1)
-        logger.info(f'stage1_regress2: {stage1_regress.shape}')
-        np.save('./model_outputs/stage1_regress2.npy', stage1_regress.cpu().numpy())
+        log_output(f'stage1_regress2', stage1_regress)
+
         if self.soft_interval:
             stage1_regress = stage1_regress / ( float(self.stage_num[0]) * (1. + self.lambda_k * k5) )
         else:
             stage1_regress = stage1_regress / float(self.stage_num[0])
-
-        logger.info(f'stage1_regress3: {stage1_regress.shape}')
-        np.save('./model_outputs/stage1_regress3.npy', stage1_regress.cpu().numpy())
+        log_output(f'stage1_regress3_{index}', stage1_regress)
 
 
         for index in range(self.stage_num[1]):
@@ -199,26 +219,31 @@ class VGG16_LCM_REG(nn.Module):
                 stage2_regress = stage2_regress + (float(index) + self.lambda_i * i4[:, index, :, :]) * p4[:, index, :, :]
             else:
                 stage2_regress = stage2_regress + float(index) * p4[:, index, :, :]
+            log_output(f'stage2_regress1_{index}', stage2_regress)
         stage2_regress = torch.unsqueeze(stage2_regress, 1)
+        log_output(f'stage2_regress2_{index}', stage2_regress)
         if self.soft_interval:
             stage2_regress = stage2_regress / ( (float(self.stage_num[0]) * (1. + self.lambda_k * k5)) *
                                                 (float(self.stage_num[1]) * (1. + self.lambda_k * k4)) )
         else:
             stage2_regress = stage2_regress / float( self.stage_num[0] * self.stage_num[1] )
-
+        log_output(f'stage2_regress3', stage2_regress)
 
         for index in range(self.stage_num[2]):
             if self.soft_interval:
                 stage3_regress = stage3_regress + (float(index) + self.lambda_i * i3[:, index, :, :]) * p3[:, index, :, :]
             else:
                 stage3_regress = stage3_regress + float(index) * p3[:, index, :, :]
+            log_output(f'stage3_regress1_{index}', stage3_regress)
         stage3_regress = torch.unsqueeze(stage3_regress, 1)
+        log_output(f'stage3_regress2_{index}', stage3_regress)
         if self.soft_interval:
             stage3_regress = stage3_regress / ( (float(self.stage_num[0]) * (1. + self.lambda_k * k5)) *
                                                 (float(self.stage_num[1]) * (1. + self.lambda_k * k4)) *
                                                 (float(self.stage_num[2]) * (1. + self.lambda_k * k3)) )
         else:
             stage3_regress = stage3_regress / float( self.stage_num[0] * self.stage_num[1] * self.stage_num[2] )
+        log_output(f'stage3_regress3', stage3_regress)
 
         # regress_count = stage1_regress * self.count_range
         # regress_count = (stage1_regress + stage2_regress) * self.count_range

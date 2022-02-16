@@ -27,6 +27,7 @@ Local Counting Map for Crowd Counting** by Xiyang Liu, Jie Yang and Wenrui Ding
   * Exploration of some DL theory
     * Activation functions
     * 1x1 convolution
+  * Step by step analysis of model outputs, exploration of effects
 * **tree_results_vgg16_lcm_reg.ipynb**
   * Results of experiment when applying vgg16_lcm_reg model to london tree dataset
   * **Note**: test_classes.Summary and test_classes.CvTest are custom tools I've built, I will make the code for these available on 
