@@ -196,7 +196,7 @@ class VGG16_LCM_REG(nn.Module):
         stage3_regress = p3[:, 0, :, :] * 0
         log_output('stage3_regress0', stage1_regress)
 
-
+        # Stage 1
         for index in range(self.stage_num[0]):
             if self.soft_interval:
                 stage1_regress = stage1_regress + (float(index) + self.lambda_i * i5[:, index, :, :]) * p5[:, index, :, :]
